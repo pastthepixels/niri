@@ -66,7 +66,7 @@ impl FocusRing {
         scale: f64,
         alpha: f32,
     ) {
-        let width = self.config.width;
+        let width = self.config.width.max(0.);
         self.full_size = win_size + Size::from((width, width)).upscale(2.);
         self.is_border = is_border;
 
@@ -139,6 +139,8 @@ impl FocusRing {
                 ),
             );
 
+            let width = self.config.width.abs();
+
             // Top edge.
             self.sizes[0] = Size::from((win_size.w + width * 2. - top_left - top_right, width));
             self.locations[0] = Point::from((-width + top_left, -width));
@@ -175,6 +177,13 @@ impl FocusRing {
             self.sizes[7] = Size::from((bottom_left, bottom_left));
             self.locations[7] = Point::from((-width, win_size.h + width - bottom_left));
 
+            if self.config.width.is_sign_negative() {
+                self.locations[0] = Point::from((-width + top_left, 0.));
+                self.locations[1] = Point::from((-width + bottom_left, win_size.h - width));
+                self.locations[2] = Point::from((0., -width + top_left));
+                self.locations[3] = Point::from((win_size.w - width, -width + top_right));
+            }
+
             for (buf, size) in zip(&mut self.buffers, self.sizes) {
                 buf.resize(size);
             }
@@ -188,7 +197,11 @@ impl FocusRing {
                     gradient.to,
                     ((gradient.angle as f32) - 90.).to_radians(),
                     Rectangle::new(full_rect.loc - loc, full_rect.size),
-                    rounded_corner_border_width,
+                    if self.config.width.is_sign_positive() {
+                        rounded_corner_border_width
+                    } else {
+                        width as f32
+                    },
                     radius,
                     scale as f32,
                     alpha,
@@ -228,7 +241,7 @@ impl FocusRing {
         let border_width = -self.locations[0].y;
 
         // If drawing as a border with width = 0, then there's nothing to draw.
-        if self.is_border && border_width == 0. {
+        if self.is_border && border_width == 0. && self.config.width.is_sign_positive() {
             return;
         }
 

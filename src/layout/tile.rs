@@ -246,7 +246,7 @@ impl<W: LayoutElement> Tile<W> {
         let rules = self.window.rules();
 
         let mut border_config = self.options.layout.border.merged_with(&rules.border);
-        border_config.width = round_max1(border_config.width);
+        border_config.width = round_max1(border_config.width.abs()) * border_config.width.signum();
         self.border.update_config(border_config.into());
 
         let mut focus_ring_config = self
@@ -396,7 +396,7 @@ impl<W: LayoutElement> Tile<W> {
 
         let rules = self.window.rules();
         let mut border_config = self.options.layout.border.merged_with(&rules.border);
-        border_config.width = round_max1(border_config.width);
+        border_config.width = round_max1(border_config.width.abs()) * border_config.width.signum();
         self.border.update_config(border_config.into());
 
         let mut focus_ring_config = self
@@ -1126,6 +1126,16 @@ impl<W: LayoutElement> Tile<W> {
             &mut |elem| push(elem.into()),
         );
 
+        if self.border.config().width.is_sign_negative() {
+            if let Some(width) = self.visual_border_width() {
+                self.border.render(
+                    ctx.renderer,
+                    location + Point::from((width, width)),
+                    &mut |elem| push(elem.into()),
+                );
+            }
+        }
+
         // If we're resizing, try to render a shader, or a fallback.
         let mut pushed_resize = false;
         if let Some(resize) = &self.resize_animation {
@@ -1321,12 +1331,14 @@ impl<W: LayoutElement> Tile<W> {
             }
         }
 
-        if let Some(width) = self.visual_border_width() {
-            self.border.render(
-                ctx.renderer,
-                location + Point::from((width, width)),
-                &mut |elem| push(elem.into()),
-            );
+        if self.border.config().width.is_sign_positive() {
+            if let Some(width) = self.visual_border_width() {
+                self.border.render(
+                    ctx.renderer,
+                    location + Point::from((width, width)),
+                    &mut |elem| push(elem.into()),
+                );
+            }
         }
 
         // Hide the focus ring when maximized/fullscreened. It's not normally visible anyway due to

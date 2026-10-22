@@ -629,7 +629,7 @@ pub struct BorderRule {
     #[knuffel(child)]
     pub on: bool,
     #[knuffel(child, unwrap(argument))]
-    pub width: Option<FloatOrInt<0, 65535>>,
+    pub width: Option<FloatOrInt<-65535, 65535>>,
     #[knuffel(child)]
     pub active_color: Option<Color>,
     #[knuffel(child)]
